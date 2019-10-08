@@ -50,6 +50,6 @@ BB::is_called()
 bool
 BB::returns()
 {
-  return (insns.back().flags & Instruction::INS_FLAG_RET);
+  return (insns.back().flags & INS_FLAG_RET);
 }
 

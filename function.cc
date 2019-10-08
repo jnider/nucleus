@@ -113,7 +113,7 @@ Function::add_bb(BB *bb)
     this->start = bb->start;
   }
   if(!this->end || (bb->end > this->end)) {
-    if(!(bb->insns.back().flags & Instruction::INS_FLAG_NOP)) this->end = bb->end;
+    if(!(bb->insns.back().flags & INS_FLAG_NOP)) this->end = bb->end;
   }
   bb->function = this;
 }

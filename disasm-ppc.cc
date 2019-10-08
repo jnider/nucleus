@@ -201,20 +201,20 @@ is_cs_indirect_ins(cs_insn *ins)
 }
 
 
-static uint8_t
+static OperandType
 cs_to_nucleus_op_type(ppc_op_type op)
 {
   switch(op) {
   case PPC_OP_REG:
-    return Operand::OP_TYPE_REG;
+    return OP_TYPE_REG;
   case PPC_OP_IMM:
-    return Operand::OP_TYPE_IMM;
+    return OP_TYPE_IMM;
   case PPC_OP_MEM:
-    return Operand::OP_TYPE_MEM;
+    return OP_TYPE_MEM;
   case PPC_OP_CRX:
   case PPC_OP_INVALID:
   default:
-    return Operand::OP_TYPE_NONE;
+    return OP_TYPE_NONE;
   }
 }
 
@@ -231,7 +231,7 @@ nucleus_disasm_bb_ppc(Binary *bin, DisasmSection *dis, BB *bb)
   uint64_t pc_addr, offset;
   size_t i, j, n;
   Instruction *ins;
-  Operand *op;
+  PPCOperand *op;
 
   init   = 0;
   cs_ins = NULL;
@@ -320,26 +320,26 @@ nucleus_disasm_bb_ppc(Binary *bin, DisasmSection *dis, BB *bb)
     ins->op_str     = std::string(cs_ins->op_str);
     ins->privileged = priv;
     ins->trap       = trap;
-    if(nop)   ins->flags |= Instruction::INS_FLAG_NOP;
-    if(ret)   ins->flags |= Instruction::INS_FLAG_RET;
-    if(jmp)   ins->flags |= Instruction::INS_FLAG_JMP;
-    if(cond)  ins->flags |= Instruction::INS_FLAG_COND;
-    if(cflow) ins->flags |= Instruction::INS_FLAG_CFLOW;
-    if(call)  ins->flags |= Instruction::INS_FLAG_CALL;
-    if(indir) ins->flags |= Instruction::INS_FLAG_INDIRECT;
+    if(nop)   ins->flags |= INS_FLAG_NOP;
+    if(ret)   ins->flags |= INS_FLAG_RET;
+    if(jmp)   ins->flags |= INS_FLAG_JMP;
+    if(cond)  ins->flags |= INS_FLAG_COND;
+    if(cflow) ins->flags |= INS_FLAG_CFLOW;
+    if(call)  ins->flags |= INS_FLAG_CALL;
+    if(indir) ins->flags |= INS_FLAG_INDIRECT;
 
     for(i = 0; i < cs_ins->detail->ppc.op_count; i++) {
       cs_op = &cs_ins->detail->ppc.operands[i];
       ins->operands.push_back(Operand());
-      op = &ins->operands.back();
+      op = dynamic_cast<PPCOperand*>(&ins->operands.back());
       op->type = cs_to_nucleus_op_type(cs_op->type);
-      if(op->type == Operand::OP_TYPE_IMM) {
-        op->ppc_value.imm = cs_op->imm;
-      } else if(op->type == Operand::OP_TYPE_REG) {
-        op->ppc_value.reg = (ppc_reg)cs_op->reg;
-      } else if(op->type == Operand::OP_TYPE_MEM) {
-        op->ppc_value.mem.base = cs_op->mem.base;
-        op->ppc_value.mem.disp = cs_op->mem.disp;
+      if(op->type == OP_TYPE_IMM) {
+        op->value.imm = cs_op->imm;
+      } else if(op->type == OP_TYPE_REG) {
+        op->value.reg = (ppc_reg)cs_op->reg;
+      } else if(op->type == OP_TYPE_MEM) {
+        op->value.mem.base = cs_op->mem.base;
+        op->value.mem.disp = cs_op->mem.disp;
       }
     }
 
@@ -356,8 +356,8 @@ nucleus_disasm_bb_ppc(Binary *bin, DisasmSection *dis, BB *bb)
      * that are ignored by Nucleus, e.g. calls to external functions.
      * We ignore such calls directly at disasm level. */
     if(call && ins->target == ins->start) {
-      ins->flags &= ~Instruction::INS_FLAG_CALL;
-      ins->flags &= ~Instruction::INS_FLAG_CFLOW;
+      ins->flags &= ~INS_FLAG_CALL;
+      ins->flags &= ~INS_FLAG_CFLOW;
     }
 
     if(cflow) {

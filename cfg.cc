@@ -74,23 +74,23 @@ CFG::analyze_addrtaken_ppc()
        *     lis    rN, .L@ha
        *     ori    rN, rN, .L@l */
       if(ins.id == PPC_INS_LIS) {
-        int64_t dst = ins.operands[0].ppc_value.reg - PPC_REG_R0;
-        int64_t imm = ins.operands[1].ppc_value.imm;
+        int64_t dst = dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg - PPC_REG_R0;
+        int64_t imm = dynamic_cast<PPCOperand*>(&ins.operands[1])->value.imm;
         assert(dst < 32);
         registers[dst] = imm << 16;
       }
       else if(ins.id == PPC_INS_ADDI || ins.id == PPC_INS_ORI) {
-        int64_t lhs = ins.operands[1].ppc_value.reg - PPC_REG_R0;
-        int64_t rhs = ins.operands[2].ppc_value.imm;
+        int64_t lhs = dynamic_cast<PPCOperand*>(&ins.operands[1])->value.reg - PPC_REG_R0;
+        int64_t rhs = dynamic_cast<PPCOperand*>(&ins.operands[2])->value.imm;
         assert(lhs < 32);
         if (registers[lhs] != -1) {
           mark_addrtaken(registers[lhs] | rhs);
         }
       }
-      else if(ins.operands[0].type == Operand::OP_TYPE_REG
-           && ins.operands[0].ppc_value.reg >= PPC_REG_R0
-           && ins.operands[0].ppc_value.reg <= PPC_REG_R31) {
-        int64_t dst = ins.operands[0].ppc_value.reg - PPC_REG_R0;
+      else if(dynamic_cast<PPCOperand*>(&ins.operands[0])->type == OP_TYPE_REG
+           && dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg >= PPC_REG_R0
+           && dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg <= PPC_REG_R31) {
+        int64_t dst = dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg - PPC_REG_R0;
         registers[dst] = -1;
       }
     }
@@ -102,7 +102,7 @@ void
 CFG::analyze_addrtaken_x86()
 {
   BB *bb;
-  Operand *op_src, *op_dst;
+  X86Operand *op_src, *op_dst;
 
   for(auto &kv: this->start2bb) {
     bb = kv.second;
@@ -110,11 +110,11 @@ CFG::analyze_addrtaken_x86()
       if(ins.operands.size() < 2) {
         continue;
       }
-      op_dst = &ins.operands[0];
-      op_src = &ins.operands[1];
-      if(((op_dst->type == Operand::OP_TYPE_REG) || (op_dst->type == Operand::OP_TYPE_MEM))
-         && (op_src->type == Operand::OP_TYPE_IMM)) {
-        mark_addrtaken(op_src->x86_value.imm);
+      op_dst = dynamic_cast<X86Operand*>(&ins.operands[0]);
+      op_src = dynamic_cast<X86Operand*>(&ins.operands[1]);
+      if(((op_dst->type == OP_TYPE_REG) || (op_dst->type == OP_TYPE_MEM))
+         && (op_src->type == OP_TYPE_IMM)) {
+        mark_addrtaken(op_src->value.imm);
       }
     }
   }
@@ -218,29 +218,29 @@ CFG::find_switches_aarch64(){
             scale = 2;
           }
           else if (ins.id == ARM64_INS_LDR
-           && ins.operands[0].aarch64_value.reg >= ARM64_REG_W0
-           && ins.operands[0].aarch64_value.reg <= ARM64_REG_W28) {
+           && dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg >= ARM64_REG_W0
+           && dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg <= ARM64_REG_W28) {
             scale = 4;
           }
           else if (ins.id == ARM64_INS_LDR
-           && ins.operands[0].aarch64_value.reg >= ARM64_REG_X0
-           && ins.operands[0].aarch64_value.reg <= ARM64_REG_X28) {
+           && dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg >= ARM64_REG_X0
+           && dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg <= ARM64_REG_X28) {
             scale = 8;
           }
         }
         /* detect jump-table address loading */
         if(ins.id == ARM64_INS_ADRP) {
-          int64_t dst = ins.operands[0].aarch64_value.reg - ARM64_REG_X0;
-          int64_t imm = ins.operands[1].aarch64_value.imm;
+          int64_t dst = dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg - ARM64_REG_X0;
+          int64_t imm = dynamic_cast<AArch64Operand*>(&ins.operands[1])->value.imm;
           assert(dst < 29);
           registers[dst] = imm;
         }
         else if(ins.id == ARM64_INS_ADD
-             && ins.operands[1].type == Operand::OP_TYPE_REG
-             && ins.operands[2].type == Operand::OP_TYPE_IMM) {
-          int64_t dst = ins.operands[0].aarch64_value.reg - ARM64_REG_X0;
-          int64_t lhs = ins.operands[1].aarch64_value.reg - ARM64_REG_X0;
-          int64_t rhs = ins.operands[2].aarch64_value.imm & 0xFFF;
+             && dynamic_cast<AArch64Operand*>(&ins.operands[1])->type == OP_TYPE_REG
+             && dynamic_cast<AArch64Operand*>(&ins.operands[2])->type == OP_TYPE_IMM) {
+          int64_t dst = dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg - ARM64_REG_X0;
+          int64_t lhs = dynamic_cast<AArch64Operand*>(&ins.operands[1])->value.reg - ARM64_REG_X0;
+          int64_t rhs = dynamic_cast<AArch64Operand*>(&ins.operands[2])->value.imm & 0xFFF;
           assert(dst < 29 && lhs < 29);
           registers[dst] = registers[lhs] + rhs;
           if (registers[dst] != -1) {
@@ -248,10 +248,10 @@ CFG::find_switches_aarch64(){
             scale = 0;
           }
         }
-        else if(ins.operands[0].type == Operand::OP_TYPE_REG
-             && ins.operands[0].aarch64_value.reg >= ARM64_REG_X0
-             && ins.operands[0].aarch64_value.reg <= ARM64_REG_X28) {
-          int64_t dst = ins.operands[0].aarch64_value.reg - ARM64_REG_X0;
+        else if(dynamic_cast<AArch64Operand*>(&ins.operands[0])->type == OP_TYPE_REG
+             && dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg >= ARM64_REG_X0
+             && dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg <= ARM64_REG_X28) {
+          int64_t dst = dynamic_cast<AArch64Operand*>(&ins.operands[0])->value.reg - ARM64_REG_X0;
           registers[dst] = -1;
         }
       }
@@ -366,21 +366,21 @@ CFG::find_switches_arm()
          *     ldrls   pc, [pc, rN, lsl#2]
          */
         if(ins.id == ARM_INS_ADD &&
-           ins.operands[1].type == Operand::OP_TYPE_REG &&
-           ins.operands[1].arm_value.reg == ARM_REG_PC &&
-           ins.operands[2].type == Operand::OP_TYPE_IMM) {
-          int64_t imm = ins.operands[2].arm_value.imm;
+           dynamic_cast<const ARMOperand*>(&ins.operands[1])->type == OP_TYPE_REG &&
+           dynamic_cast<const ARMOperand*>(&ins.operands[1])->value.reg == ARM_REG_PC &&
+           dynamic_cast<const ARMOperand*>(&ins.operands[2])->type == OP_TYPE_IMM) {
+          int64_t imm = dynamic_cast<const ARMOperand*>(&ins.operands[2])->value.imm;
           jmptab_addr = (ins.start + 8) + imm;
           break;
         }
-        else if(ins.id == ARM_INS_ADR && ins.operands[0].arm_value.reg == ARM_REG_PC) {
-          int64_t imm = ins.operands[1].arm_value.imm;
+        else if(ins.id == ARM_INS_ADR && dynamic_cast<const ARMOperand*>(&ins.operands[0])->value.reg == ARM_REG_PC) {
+          int64_t imm = dynamic_cast<const ARMOperand*>(&ins.operands[1])->value.imm;
           jmptab_addr = (ins.start + 8) + imm;
           break;
         }
         else if(ins.id == ARM_INS_LDR
-             && ins.operands[0].arm_value.reg == ARM_REG_PC
-             && ins.operands[1].arm_value.reg == ARM_REG_PC) {
+             && dynamic_cast<const ARMOperand*>(&ins.operands[0])->value.reg == ARM_REG_PC
+             && dynamic_cast<const ARMOperand*>(&ins.operands[1])->value.reg == ARM_REG_PC) {
           jmptab_addr = (ins.start + 8);
           break;
         }
@@ -490,15 +490,15 @@ CFG::find_switches_mips()
          *     daddu   $A, $A, $B
          */
         if(ins.id == MIPS_INS_LUI) {
-          int64_t dst = ins.operands[0].mips_value.reg - MIPS_REG_0;
-          int64_t imm = ins.operands[1].mips_value.imm;
+          int64_t dst = dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg - MIPS_REG_0;
+          int64_t imm = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.imm;
           assert(dst < 32);
           registers[dst] = imm << 16;
         }
         else if(ins.id == MIPS_INS_ADDIU || ins.id == MIPS_INS_DADDIU) {
-          int64_t dst = ins.operands[0].mips_value.reg - MIPS_REG_0;
-          int64_t lhs = ins.operands[1].mips_value.reg - MIPS_REG_0;
-          int64_t rhs = ins.operands[2].mips_value.imm;
+          int64_t dst = dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg - MIPS_REG_0;
+          int64_t lhs = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.reg - MIPS_REG_0;
+          int64_t rhs = dynamic_cast<MIPSOperand*>(&ins.operands[2])->value.imm;
           assert(dst < 32 && lhs < 32);
           registers[dst] = registers[lhs] + rhs;
           if (registers[dst] != -1) {
@@ -506,9 +506,9 @@ CFG::find_switches_mips()
           }
         }
         else if(ins.id == MIPS_INS_ADDU) {
-          int64_t dst = ins.operands[0].mips_value.reg - MIPS_REG_0;
-          int64_t lhs = ins.operands[1].mips_value.reg - MIPS_REG_0;
-          int64_t rhs = ins.operands[2].mips_value.reg - MIPS_REG_0;
+          int64_t dst = dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg - MIPS_REG_0;
+          int64_t lhs = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.reg - MIPS_REG_0;
+          int64_t rhs = dynamic_cast<MIPSOperand*>(&ins.operands[2])->value.reg - MIPS_REG_0;
           assert(dst < 32 && lhs < 32 && rhs < 32);
           /* addu emulation is intentionally wrong. the goal is replacing:
            * - `dst = jumptable + offset` => `dst = jumptable`
@@ -520,33 +520,33 @@ CFG::find_switches_mips()
           }
         }
         else if(ins.id == MIPS_INS_LW) {
-          int64_t reg = ins.operands[1].mips_value.mem.base - MIPS_REG_0;
-          int64_t imm = ins.operands[1].mips_value.mem.disp;
+          int64_t reg = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.mem.base - MIPS_REG_0;
+          int64_t imm = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.mem.disp;
           assert(reg < 32);
           if (registers[reg] != -1) {
             jmptab_addr = (uint64_t)(registers[reg] + imm);
           }
         }
         else if(ins.id == MIPS_INS_DADDU) {
-          int64_t dst = ins.operands[0].mips_value.reg - MIPS_REG_0;
-          int64_t lhs = ins.operands[1].mips_value.reg - MIPS_REG_0;
-          int64_t rhs = ins.operands[2].mips_value.reg - MIPS_REG_0;
+          int64_t dst = dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg - MIPS_REG_0;
+          int64_t lhs = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.reg - MIPS_REG_0;
+          int64_t rhs = dynamic_cast<MIPSOperand*>(&ins.operands[2])->value.reg - MIPS_REG_0;
           assert(dst < 32 && lhs < 32 && rhs < 32);
           registers[dst] = registers[lhs] + registers[rhs];
           if (registers[dst] != -1) {
             jmptab_addr = (uint64_t)(registers[dst]);
           }
         }
-        else if(ins.id == MIPS_INS_DSLL32 && ins.operands[2].mips_value.reg == 0) {
-          int64_t dst = ins.operands[0].mips_value.reg - MIPS_REG_0;
-          int64_t src = ins.operands[1].mips_value.reg - MIPS_REG_0;
+        else if(ins.id == MIPS_INS_DSLL32 && dynamic_cast<MIPSOperand*>(&ins.operands[2])->value.reg == 0) {
+          int64_t dst = dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg - MIPS_REG_0;
+          int64_t src = dynamic_cast<MIPSOperand*>(&ins.operands[1])->value.reg - MIPS_REG_0;
           assert(dst < 32 && src < 32);
           registers[dst] = src << 32;
         }
-        else if(ins.operands[0].type == Operand::OP_TYPE_REG
-             && ins.operands[0].mips_value.reg >= MIPS_REG_0
-             && ins.operands[0].mips_value.reg <= MIPS_REG_31) {
-          int64_t dst = ins.operands[0].mips_value.reg - MIPS_REG_0;
+        else if(dynamic_cast<MIPSOperand*>(&ins.operands[0])->type == OP_TYPE_REG
+             && dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg >= MIPS_REG_0
+             && dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg <= MIPS_REG_31) {
+          int64_t dst = dynamic_cast<MIPSOperand*>(&ins.operands[0])->value.reg - MIPS_REG_0;
           registers[dst] = -1;
         }
       }
@@ -655,24 +655,24 @@ CFG::find_switches_ppc()
          *     lis    rN, .L@ha
          *     ori    rN, rN, .L@l */
         if(ins.id == PPC_INS_LIS) {
-          int64_t dst = ins.operands[0].ppc_value.reg - PPC_REG_R0;
-          int64_t imm = ins.operands[1].ppc_value.imm;
+          int64_t dst = dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg - PPC_REG_R0;
+          int64_t imm = dynamic_cast<PPCOperand*>(&ins.operands[1])->value.imm;
           assert(dst < 32);
           registers[dst] = imm << 16;
         }
         else if(ins.id == PPC_INS_ADDI || ins.id == PPC_INS_ORI) {
-          int64_t lhs = ins.operands[1].ppc_value.reg - PPC_REG_R0;
-          int64_t rhs = ins.operands[2].ppc_value.imm;
+          int64_t lhs = dynamic_cast<PPCOperand*>(&ins.operands[1])->value.reg - PPC_REG_R0;
+          int64_t rhs = dynamic_cast<PPCOperand*>(&ins.operands[2])->value.imm;
           assert(lhs < 32);
           if (registers[lhs] != -1) {
             jmptab_addr = (uint64_t)(registers[lhs] | rhs);
             break;
           }
         }
-        else if(ins.operands[0].type == Operand::OP_TYPE_REG
-             && ins.operands[0].ppc_value.reg >= PPC_REG_R0
-             && ins.operands[0].ppc_value.reg <= PPC_REG_R31) {
-          int64_t dst = ins.operands[0].ppc_value.reg - PPC_REG_R0;
+        else if(dynamic_cast<PPCOperand*>(&ins.operands[0])->type == OP_TYPE_REG
+             && dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg >= PPC_REG_R0
+             && dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg <= PPC_REG_R31) {
+          int64_t dst = dynamic_cast<PPCOperand*>(&ins.operands[0])->value.reg - PPC_REG_R0;
           registers[dst] = -1;
         }
       }
@@ -747,7 +747,8 @@ CFG::find_switches_x86()
   BB *bb, *cc;
   Edge *conflict_edge;
   Section *target_sec;
-  Operand *op_target, *op_reg, *op_mem;
+  X86Operand *op_target, *op_reg;
+	X86Operand *op_mem;
   int scale;
   unsigned offset;
   uint64_t jmptab_addr, jmptab_idx, jmptab_end, case_addr;
@@ -769,11 +770,11 @@ CFG::find_switches_x86()
         continue;
       }
       target_sec = bb->section;
-      op_target  = &bb->insns.back().operands[0];
-      if(op_target->type == Operand::OP_TYPE_MEM) {
-        jmptab_addr = (uint64_t)op_target->x86_value.mem.disp;
-        scale = op_target->x86_value.mem.scale;
-      } else if(op_target->type != Operand::OP_TYPE_REG) {
+      op_target  = dynamic_cast<X86Operand*>(&bb->insns.back().operands[0]);
+      if(op_target->type == OP_TYPE_MEM) {
+        jmptab_addr = (uint64_t)op_target->value.mem.disp;
+        scale = op_target->value.mem.scale;
+      } else if(op_target->type != OP_TYPE_REG) {
         ins = bb->insns.end();
         ins--; /* Skip the jmp itself */
         while(ins != bb->insns.begin()) {
@@ -781,19 +782,19 @@ CFG::find_switches_x86()
           if(ins->operands.empty()) {
             continue;
           }
-          op_reg = &ins->operands[0];
-          if(op_reg->type != Operand::OP_TYPE_REG) {
+          op_reg = dynamic_cast<X86Operand*>(&ins->operands[0]);
+          if(op_reg->type != OP_TYPE_REG) {
             continue;
-          } else if(op_reg->x86_value.reg != op_target->x86_value.reg) {
+          } else if(op_reg->value.reg != op_target->value.reg) {
             continue;
           } else {
             /* This is the last instruction that loads the jump target register,
              * see if we can find a jump table address from it */
             if(ins->operands.size() >= 2) {
-              op_mem = &ins->operands[1];
-              if(op_mem->type == Operand::OP_TYPE_MEM) {
-                jmptab_addr = (uint64_t)op_mem->x86_value.mem.disp;
-                scale = op_mem->x86_value.mem.scale;
+              op_mem = dynamic_cast<X86Operand*>(&ins->operands[1]);
+              if(op_mem->type == OP_TYPE_MEM) {
+                jmptab_addr = (uint64_t)op_mem->value.mem.disp;
+                scale = op_mem->value.mem.scale;
               }
             } else {
               /* No luck :-( */
@@ -1023,7 +1024,7 @@ CFG::verify_padding()
       noplen = (bb->end - bb->start);
       for(auto &e: bb->ancestors) {
         if((e.type == Edge::EDGE_TYPE_FALLTHROUGH) 
-           && (e.src->insns.back().flags & Instruction::INS_FLAG_CALL)) {
+           && (e.src->insns.back().flags & INS_FLAG_CALL)) {
           /* This padding block may not be truly reachable; the preceding
            * call may be non-returning */
           call_fallthrough = true;
@@ -1061,11 +1062,11 @@ CFG::detect_bad_bbs()
       cc = get_bb(cc->start-1, &offset);
       if(!cc) break;
       flags = cc->insns.back().flags;
-      if((flags & Instruction::INS_FLAG_CFLOW) && (Instruction::INS_FLAG_INDIRECT)) {
+      if((flags & INS_FLAG_CFLOW) && (INS_FLAG_INDIRECT)) {
         invalid = false;
-      } else if((flags & Instruction::INS_FLAG_CALL) || (flags & Instruction::INS_FLAG_JMP)) {
+      } else if((flags & INS_FLAG_CALL) || (flags & INS_FLAG_JMP)) {
         invalid = (get_bb(cc->insns.back().target, &offset) == NULL);
-      } else if(flags & Instruction::INS_FLAG_RET) {
+      } else if(flags & INS_FLAG_RET) {
         invalid = false;
       }
       if(invalid) {
@@ -1209,15 +1210,15 @@ CFG::make_cfg(Binary *bin, std::list<DisasmSection> *disasm)
   for(auto &dis: (*disasm)) {
     for(auto &bb: dis.BBs) {
       flags = bb.insns.back().flags;
-      if((flags & Instruction::INS_FLAG_CALL) || (flags & Instruction::INS_FLAG_JMP)) {
-        if(!(flags & Instruction::INS_FLAG_INDIRECT)) {
+      if((flags & INS_FLAG_CALL) || (flags & INS_FLAG_JMP)) {
+        if(!(flags & INS_FLAG_INDIRECT)) {
           addr = bb.insns.back().target;
           link_bbs(bb.insns.back().edge_type(), &bb, addr);
         }
-        if((flags & Instruction::INS_FLAG_CALL) || (flags & Instruction::INS_FLAG_COND)) {
+        if((flags & INS_FLAG_CALL) || (flags & INS_FLAG_COND)) {
           link_bbs(Edge::EDGE_TYPE_FALLTHROUGH, &bb, bb.end);
         }
-      } else if(!(flags & Instruction::INS_FLAG_CFLOW) && !bb.padding) {
+      } else if(!(flags & INS_FLAG_CFLOW) && !bb.padding) {
         /* A block that doesn't have a control flow instruction at the end;
          * this can happen if the next block is a nop block */
         link_bbs(Edge::EDGE_TYPE_FALLTHROUGH, &bb, bb.end);

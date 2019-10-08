@@ -211,23 +211,23 @@ is_cs_privileged_ins(cs_insn *ins)
 }
 
 
-static uint8_t
+static OperandType
 cs_to_nucleus_op_type(x86_op_type op)
 {
   switch(op) {
   case X86_OP_REG:
-    return Operand::OP_TYPE_REG;
+    return OP_TYPE_REG;
   case X86_OP_IMM:
-    return Operand::OP_TYPE_IMM;
+    return OP_TYPE_IMM;
   case X86_OP_MEM:
-    return Operand::OP_TYPE_MEM;
+    return OP_TYPE_MEM;
 #if CS_API_MAJOR < 4 /* X86_OP_FP does not exist in later versions */
   case X86_OP_FP:
-    return Operand::OP_TYPE_FP;
+    return OP_TYPE_FP;
 #endif
   case X86_OP_INVALID:
   default:
-    return Operand::OP_TYPE_NONE;
+    return OP_TYPE_NONE;
   }
 }
 
@@ -244,7 +244,7 @@ nucleus_disasm_bb_x86(Binary *bin, DisasmSection *dis, BB *bb)
   uint64_t pc_addr, offset;
   size_t i, j, n;
   Instruction *ins;
-  Operand *op;
+  X86Operand *op;
 
   init   = 0;
   cs_ins = NULL;
@@ -340,37 +340,37 @@ nucleus_disasm_bb_x86(Binary *bin, DisasmSection *dis, BB *bb)
     ins->op_str     = std::string(cs_ins->op_str);
     ins->privileged = priv;
     ins->trap       = trap;
-    if(nop)   ins->flags |= Instruction::INS_FLAG_NOP;
-    if(ret)   ins->flags |= Instruction::INS_FLAG_RET;
-    if(jmp)   ins->flags |= Instruction::INS_FLAG_JMP;
-    if(cond)  ins->flags |= Instruction::INS_FLAG_COND;
-    if(cflow) ins->flags |= Instruction::INS_FLAG_CFLOW;
-    if(call)  ins->flags |= Instruction::INS_FLAG_CALL;
+    if(nop)   ins->flags |= INS_FLAG_NOP;
+    if(ret)   ins->flags |= INS_FLAG_RET;
+    if(jmp)   ins->flags |= INS_FLAG_JMP;
+    if(cond)  ins->flags |= INS_FLAG_COND;
+    if(cflow) ins->flags |= INS_FLAG_CFLOW;
+    if(call)  ins->flags |= INS_FLAG_CALL;
 
     for(i = 0; i < cs_ins->detail->x86.op_count; i++) {
       cs_op = &cs_ins->detail->x86.operands[i];
       ins->operands.push_back(Operand());
-      op = &ins->operands.back();
+      op = dynamic_cast<X86Operand*>(&ins->operands.back());
       op->type = cs_to_nucleus_op_type(cs_op->type);
       op->size = cs_op->size;
-      if(op->type == Operand::OP_TYPE_IMM) {
-        op->x86_value.imm = cs_op->imm;
-      } else if(op->type == Operand::OP_TYPE_REG) {
-        op->x86_value.reg = cs_op->reg;
-        if(cflow) ins->flags |= Instruction::INS_FLAG_INDIRECT;
-      } else if(op->type == Operand::OP_TYPE_FP) {
+      if(op->type == OP_TYPE_IMM) {
+        op->value.imm = cs_op->imm;
+      } else if(op->type == OP_TYPE_REG) {
+        op->value.reg = cs_op->reg;
+        if(cflow) ins->flags |= INS_FLAG_INDIRECT;
+      } else if(op->type == OP_TYPE_FP) {
 #if CS_API_MAJOR < 4 /* cs_op->fp does not exist in later versions */
-        op->x86_value.fp = cs_op->fp;
+        op->value.fp = cs_op->fp;
 #else
-        op->x86_value.fp = 0;
+        op->value.fp = 0;
 #endif
-      } else if(op->type == Operand::OP_TYPE_MEM) {
-        op->x86_value.mem.segment = cs_op->mem.segment;
-        op->x86_value.mem.base    = cs_op->mem.base;
-        op->x86_value.mem.index   = cs_op->mem.index;
-        op->x86_value.mem.scale   = cs_op->mem.scale;
-        op->x86_value.mem.disp    = cs_op->mem.disp;
-        if(cflow) ins->flags |= Instruction::INS_FLAG_INDIRECT;
+      } else if(op->type == OP_TYPE_MEM) {
+        op->value.mem.segment = cs_op->mem.segment;
+        op->value.mem.base    = cs_op->mem.base;
+        op->value.mem.index   = cs_op->mem.index;
+        op->value.mem.scale   = cs_op->mem.scale;
+        op->value.mem.disp    = cs_op->mem.disp;
+        if(cflow) ins->flags |= INS_FLAG_INDIRECT;
       }
     }
 

@@ -82,27 +82,31 @@ bb_score_recursive(DisasmSection *dis, BB *bb)
 unsigned
 bb_queue_recursive(DisasmSection *dis, BB *parent, BB **mutants, unsigned n, const unsigned max_mutants)
 {
-  uint64_t target;
+	uint64_t target;
 
-  for(auto &ins: parent->insns) {
-    target = ins.target;
-    if(target && dis->section->contains(target)
-       && !(dis->addrmap.addr_type(target) & AddressMap::DISASM_REGION_BB_START)) {
-      /* recursively queue the target BB for disassembly */
-      (*mutants)[n++].set(target, 0);
-    }
-    if((n+1) == max_mutants) break;
-  }
-  if((parent->insns.back().flags & Instruction::INS_FLAG_COND)
-     || (parent->insns.back().flags & Instruction::INS_FLAG_CALL)) {
-    /* queue fall-through block of conditional jump or call */
-    if(((n+1) < max_mutants) && dis->section->contains(parent->end) 
-       && !(dis->addrmap.addr_type(parent->end) & AddressMap::DISASM_REGION_BB_START)) {
-      (*mutants)[n++].set(parent->end, 0);
-    }
-  }
+	for(auto &ins: parent->insns)
+	{
+		target = ins.target;
+		if(target && dis->section->contains(target)
+			&& !(dis->addrmap.addr_type(target) & AddressMap::DISASM_REGION_BB_START))
+		{
+			/* recursively queue the target BB for disassembly */
+			(*mutants)[n++].set(target, 0);
+		}
+		if((n+1) == max_mutants) break;
+	}
+	if ((parent->insns.back().flags & INS_FLAG_COND)
+		|| (parent->insns.back().flags & INS_FLAG_CALL))
+	{
+		/* queue fall-through block of conditional jump or call */
+		if(((n+1) < max_mutants) && dis->section->contains(parent->end)
+			&& !(dis->addrmap.addr_type(parent->end) & AddressMap::DISASM_REGION_BB_START))
+		{
+			(*mutants)[n++].set(parent->end, 0);
+		}
+	}
 
-  return n;
+	return n;
 }
 
 
