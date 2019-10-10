@@ -1,2 +1,4 @@
 /nucleus
 /obj
+*.swp
+libnucleus.a
