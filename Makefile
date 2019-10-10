@@ -8,7 +8,10 @@ SRC=$(wildcard *.cc)
 OBJ=$(patsubst %.cc, obj/%.o, $(SRC))
 BIN=nucleus
 
-A_SRC = $(filter-out loader.cc,$(SRC))
+A_SRC = bb.cc cfg.cc dataregion.cc disasm-aarch64.cc disasm-arm.cc \
+disasm.cc disasm-mips.cc disasm-ppc.cc disasm-x86.cc edge.cc \
+endian.cc exception.cc export.cc function.cc insn.cc \
+log.cc strategy.cc util.cc
 A_OBJ=$(patsubst %.cc, obj/%.o, $(A_SRC))
 
 .PHONY: all clean setup
